@@ -78,3 +78,15 @@ def update_user_password(email, new_hashed_password):
     conn.commit()
     cursor.close()
     conn.close()
+
+
+def delete_user_by_email(email):
+    conn = create_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "DELETE FROM users WHERE LOWER(email) = LOWER(%s)",
+        (email,),
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()

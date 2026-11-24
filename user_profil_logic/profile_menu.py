@@ -1,12 +1,13 @@
 import tkinter as tk
 from user_profil_logic.change_password import open_change_password_window
 from user_profil_logic.view_profile import open_view_profile_window
+from user_profil_logic.delete_account import handle_delete_account
 
 
 def open_profile_window(main_root, user_email, user_login):
     prof_win = tk.Toplevel()
     prof_win.title("Профіль")
-    prof_win.geometry("500x400")
+    prof_win.geometry("500x460")
     prof_win.configure(bg="#111827")
 
     def on_close():
@@ -54,4 +55,15 @@ def open_profile_window(main_root, user_email, user_login):
         width=20,
         pady=10,
         command=on_close,
+    ).pack(pady=10)
+
+    tk.Button(
+        prof_win,
+        text="Видалити обліковий запис",
+        bg="#EF4444",
+        fg="#FFFFFF",
+        font=("Arial", 12, "bold"),
+        width=20,
+        pady=10,
+        command=lambda: handle_delete_account(prof_win, main_root, user_email),
     ).pack(pady=10)
