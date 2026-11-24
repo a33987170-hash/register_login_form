@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
 import hashlib
+from user_profil_logic.profile_menu import open_profile_window
+from BD_logic.connect_db import check_user_exists, register_user
 
 ITERATIONS = 600_000
 
@@ -128,34 +130,35 @@ def open_registration_window(main_root):
             return
 
         try:
-            with open("data_users.txt", "r", encoding="utf-8") as file:
-                for line in file:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    parts = line.split(":")
-                    if len(parts) >= 3:
-                        file_email = parts[0]
-                        file_login = parts[2]
-                        if file_email.lower() == email.lower():
-                            messagebox.showwarning("Помилка", "Така електронна пошта вже зареєстрована!")
-                            return
-                        if file_login.lower() == login.lower():
-                            messagebox.showwarning("Помилка", "Такий логін вже зайнятий!")
-                            return
-        except FileNotFoundError:
-            pass
+            existing_user = check_user_exists(email, login)
+            if existing_user:
+                db_email, db_login = existing_user
+                if db_email.lower() == email.lower():
+                    messagebox.showwarning("Помилка", "Така електронна пошта вже зареєстрована!")
+                    return
+                if db_login.lower() == login.lower():
+                    messagebox.showwarning("Помилка", "Такий логін вже зайнятий!")
+                    return
+        except Exception as e:
+            messagebox.showerror("Помилка", f"Помилка бази даних: {e}")
+            return
 
         hashed_password = hashlib.pbkdf2_hmac(
-            "sha256", password.encode(), email.encode(), ITERATIONS
+            "sha256",
+            password.encode(),
+            email.encode(),
+            ITERATIONS,
         ).hex()
 
-        with open("data_users.txt", "a", encoding="utf-8") as file:
-            file.write(f"{email}:{hashed_password}:{login}\n")
+        try:
+            register_user(email, hashed_password, login)
+        except Exception as e:
+            messagebox.showerror("Помилка", f"Не вдалося зберегти користувача: {e}")
+            return
 
         messagebox.showinfo("Успіх", "Реєстрацію завершено!")
         reg_win.destroy()
-        main_root.deiconify()
+        open_profile_window(main_root, email, login)
 
     tk.Button(
         reg_win,

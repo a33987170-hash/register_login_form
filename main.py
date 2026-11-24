@@ -1,6 +1,6 @@
 import tkinter as tk
-from login import open_login_window
-from registration import open_registration_window
+from login_logic.login import open_login_window
+from registration_logic.registration import open_registration_window
 
 
 main_root = tk.Tk()

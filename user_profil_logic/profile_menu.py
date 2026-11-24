@@ -1,6 +1,6 @@
 import tkinter as tk
-from change_password import open_change_password_window
-from view_profile import open_view_profile_window
+from user_profil_logic.change_password import open_change_password_window
+from user_profil_logic.view_profile import open_view_profile_window
 
 
 def open_profile_window(main_root, user_email, user_login):

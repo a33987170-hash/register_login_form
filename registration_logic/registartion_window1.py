@@ -1,9 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
-import base64
 import hashlib
-import hmac
-import secrets
 
 ITERATIONS = 600_000
 

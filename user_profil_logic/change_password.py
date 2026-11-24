@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 import hashlib
+from BD_logic.connect_db import get_user_by_email, update_user_password
 
 ITERATIONS = 600_000
 
@@ -91,48 +92,39 @@ def open_change_password_window(parent, user_email):
             return
 
         try:
-            with open("data_users.txt", "r", encoding="utf-8") as file:
-                lines = file.readlines()
-        except FileNotFoundError:
-            messagebox.showerror("Помилка", "Файл користувачів не знайдено!", parent=window)
+            user = get_user_by_email(user_email)
+        except Exception as e:
+            messagebox.showerror("Помилка", f"Помилка бази даних: {e}", parent=window)
             return
 
+        if not user:
+            messagebox.showerror("Помилка", "Користувача не знайдено!", parent=window)
+            return
+
+        user_id, db_login, db_email, db_password = user
         hashed_current = hashlib.pbkdf2_hmac(
-            "sha256", current_password.encode(), user_email.encode(), ITERATIONS
+            "sha256",
+            current_password.encode(),
+            user_email.encode(),
+            ITERATIONS,
         ).hex()
 
-        password_changed = False
-        new_lines = []
-
-        for line in lines:
-            stripped = line.strip()
-            if not stripped:
-                new_lines.append(line)
-                continue
-
-            parts = stripped.split(":")
-            if len(parts) >= 3:
-                file_email = parts[0]
-                file_password = parts[1]
-                file_login = parts[2]
-
-                if file_email.lower() == user_email.lower() and file_password == hashed_current:
-                    hashed_new = hashlib.pbkdf2_hmac(
-                        "sha256", new_password.encode(), file_email.encode(), ITERATIONS
-                    ).hex()
-                    new_lines.append(f"{file_email}:{hashed_new}:{file_login}\n")
-                    password_changed = True
-                else:
-                    new_lines.append(line)
-            else:
-                new_lines.append(line)
-
-        if not password_changed:
+        if db_password != hashed_current:
             messagebox.showerror("Помилка", "Поточний пароль невірний!", parent=window)
             return
 
-        with open("data_users.txt", "w", encoding="utf-8") as file:
-            file.writelines(new_lines)
+        hashed_new = hashlib.pbkdf2_hmac(
+            "sha256",
+            new_password.encode(),
+            user_email.encode(),
+            ITERATIONS,
+        ).hex()
+
+        try:
+            update_user_password(user_email, hashed_new)
+        except Exception as e:
+            messagebox.showerror("Помилка", f"Не вдалося оновити пароль: {e}", parent=window)
+            return
 
         messagebox.showinfo("Успіх", "Пароль змінено!", parent=window)
         window.destroy()

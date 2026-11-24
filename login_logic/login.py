@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
 import hashlib
-from profile_menu import open_profile_window
+from user_profil_logic.profile_menu import open_profile_window
+from BD_logic.connect_db import get_user_by_email
 
 ITERATIONS = 600_000
 
@@ -67,27 +68,23 @@ def open_login_window(main_root):
             messagebox.showwarning("Помилка", "Заповніть усі поля!")
             return
 
-        found_login = ""
         try:
-            with open("data_users.txt", "r", encoding="utf-8") as file:
-                for line in file:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    parts = line.split(":")
-                    if len(parts) >= 3:
-                        file_email = parts[0]
-                        file_password = parts[1]
-                        file_login = parts[2]
-                        hashed_input = hashlib.pbkdf2_hmac(
-                            "sha256", password.encode(), file_email.encode(), ITERATIONS
-                        ).hex()
-                        if file_email.lower() == email.lower() and file_password == hashed_input:
-                            found_login = file_login
-                            break
-        except FileNotFoundError:
-            messagebox.showerror("Помилка", "Файл користувачів не знайдено!")
+            user = get_user_by_email(email)
+        except Exception as e:
+            messagebox.showerror("Помилка", f"Помилка бази даних: {e}")
             return
+
+        found_login = ""
+        if user:
+            user_id, db_login, db_email, db_password = user
+            hashed_input = hashlib.pbkdf2_hmac(
+                "sha256",
+                password.encode(),
+                db_email.encode(),
+                ITERATIONS,
+            ).hex()
+            if db_password == hashed_input:
+                found_login = db_login
 
         if found_login:
             messagebox.showinfo("Успіх", "Вхід виконано!")
@@ -98,14 +95,14 @@ def open_login_window(main_root):
             if attempts[0] >= 3:
                 messagebox.showwarning(
                     "Помилка",
-                    "3 невдалі спроби. Повернення до головного вікна."
+                    "3 невдалі спроби. Повернення до головного вікна.",
                 )
                 login_win.destroy()
                 main_root.deiconify()
             else:
                 messagebox.showwarning(
                     "Помилка",
-                    f"Невірна електронна пошта або пароль! (Спроба {attempts[0]} з 3)"
+                    f"Невірна електронна пошта або пароль! (Спроба {attempts[0]} з 3)",
                 )
 
     tk.Button(
